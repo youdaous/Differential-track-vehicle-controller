@@ -1,0 +1,14 @@
+<launch>
+    <arg name="wheel_diameter" default="0.2"/> <!--unit: m-->
+    <arg name="wheel_separation" default="0.2"/> <!--unit: m-->
+
+    <node pkg="tracked_vehicle_controller"
+          type="mmpc_controller.py"
+          name="mmpc_controller_node"
+          output="screen">
+          <rosparam subst_value="true">
+              wheel_diameter: $(arg wheel_diameter)
+              wheel_separation: $(arg wheel_separation)
+          </rosparam>
+    </node>
+</launch>
