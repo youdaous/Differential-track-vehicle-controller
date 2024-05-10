@@ -53,6 +53,7 @@ add_message_files(
   FILES
   Motors_vel.msg
   Thruster_pwm.msg
+  HeightDepth.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -5,7 +5,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 import rospy
 from custom_msgs.msg import Motors_vel
-from custom_msgs.msg import Thruster_pwm
+# from custom_msgs.msg import Thruster_pwm
 from geometry_msgs.msg import Vector3Stamped
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -30,8 +30,8 @@ class MMPCController():
         # 小车电机最大转速
         self.maxRPM = 500
 
-        # 运动学模型状态矩阵
-        self.A = np.array([[0.5, 0.5], [1/self.wheel_separation, -1/self.wheel_separation]])
+        # 运动学模型:几何质心的[线速度， 角速度]——>>[左轮速度，右轮速度]
+        self.A = np.array([[1, 0.5*self.wheel_separation], [1, -0.5*self.wheel_separation]])
 
         # 实体车轮速度分配矩阵
         if rospy.has_param('~wheel_vel_distribution'):
@@ -58,9 +58,9 @@ class MMPCController():
 
         # 小车状态
         self.factor_rpmtomps = np.pi/30*self.wheel_diameter # rpm --> m/s in wheels
-        self.left_wheel_vel = 0
-        self.right_wheel_vel = 0
-        self.left_right_wheels_vel = np.zeros((2, 1)) # unit:m/s
+        # self.left_wheel_vel = 0
+        # self.right_wheel_vel = 0
+        # self.left_right_wheels_vel = np.zeros((2, 1)) # unit:m/s
         self.current_attitude = Vector3Stamped() # unit:degree
         self.motors_vel = Motors_vel() # unit:rpm
 
@@ -68,11 +68,8 @@ class MMPCController():
         self.ref_odometry = Odometry()
         self.current_ref_X = np.zeros((3, 1))
         self.current_ref_V = np.zeros((2, 1))
-        # self.current_ref_X[2] = np.pi/2
         self.current_ref_V[0] = 0.2
         self.current_ref_X[2] = -np.pi * 0.75
-        # self.current_ref_X[0] = 0
-        # self.current_ref_X[1] = 5
 
         # mpc参数
         self.N = 20
@@ -151,7 +148,7 @@ class MMPCController():
         
                 
     def publish_motors_output(self, output):
-        motors_vel_vectors = self.wheel_vel_distribution @ output / self.factor_rpmtomps
+        motors_vel_vectors = self.wheel_vel_distribution @ self.A @ output / self.factor_rpmtomps
         motors_vel = Motors_vel()
         motors_vel.motor1_rpm = motors_vel_vectors[0]
         motors_vel.motor2_rpm = motors_vel_vectors[1]
@@ -170,9 +167,6 @@ class MMPCController():
         if not self._is_init:
             return
         
-        # self.current_ref_vel[0] = self.ref_odometry.twist.twist.linear.x
-        # self.current_ref_vel[1] = self.ref_odometry.twist.twist.angular.z
-        # self.current_ref_psi = self.quaternion2euler(self.ref_odometry.pose.pose.orientation)[2]
         self.vehicle_Xstate = np.array([self.odomInsim.pose.pose.position.x, self.odomInsim.pose.pose.position.y, \
                             self.quaternion2euler(self.odomInsim.pose.pose.orientation)[2]]).reshape(3, 1)
         

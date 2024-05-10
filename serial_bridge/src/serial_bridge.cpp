@@ -5,6 +5,7 @@
 #include <geometry_msgs/Vector3Stamped.h>
 #include <custom_msgs/Motors_vel.h>
 #include <custom_msgs/Thruster_pwm.h>
+#include <custom_msgs/HeightDepth.h>
 
 //定义一个标志位，表示是否开始存储字节到数组中
 bool startStoring = false;
@@ -200,6 +201,7 @@ int main(int argc, char **argv)
     // 发布小车姿态欧拉角和电机转速
     ros::Publisher attitudePub = n.advertise<geometry_msgs::Vector3Stamped>("attitude_inEuler", 1);
     ros::Publisher motors_velPub = n.advertise<custom_msgs::Motors_vel>("motors_vel_inrpm", 1);
+	ros::Publisher heightDepthPub = n.advertise<custom_msgs::HeightDepth>("Height_Depth", 1);
     // 订阅电机转速指令
     ros::Subscriber guideMotors_velSub = n.subscribe<custom_msgs::Motors_vel>("guide_Motors_vel", 1, guideMotorsCallback);
 	// 订阅垂推推进器指令
@@ -442,6 +444,7 @@ int main(int argc, char **argv)
 		// 发布ros消息
         geometry_msgs::Vector3Stamped attitude_inEuler;
         custom_msgs::Motors_vel motors_rpm;
+		custom_msgs::HeightDepth height_depth_data;
         ros::Time current_time = ros::Time::now();
         attitude_inEuler.header.stamp = current_time;
         attitude_inEuler.vector.x = roll;
@@ -454,8 +457,16 @@ int main(int argc, char **argv)
         motors_rpm.motor3_rpm = PBL70_speed3;
         motors_rpm.motor4_rpm = PBL70_speed4;
 
+		height_depth_data.header.stamp = current_time;
+		height_depth_data.first_target_dist = first_target_dist;
+		height_depth_data.strong_target_dist = stong_target_dist;
+		height_depth_data.last_target_dist = last_target_dist;
+		height_depth_data.pressure = pressure;
+		height_depth_data.temperature = temperature;
+
         motors_velPub.publish(motors_rpm);
 		attitudePub.publish(attitude_inEuler);
+		heightDepthPub.publish(height_depth_data);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
